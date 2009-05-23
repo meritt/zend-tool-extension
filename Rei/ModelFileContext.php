@@ -11,13 +11,15 @@ require_once 'Zend/Tool/Project/Context/Filesystem/File.php';
 require_once 'Zend/CodeGenerator/Php/File.php';
 
 /**
- * @see Zend_Filter_Word_DashToCamelCase
+ * @see Zend_Filter_Word_DashToUnderscore
  */
-require_once 'Zend/Filter/Word/DashToCamelCase.php';
+require_once 'Zend/Filter/Word/DashToUnderscore.php';
 
 class Rei_ModelFileContext extends Zend_Tool_Project_Context_Filesystem_File
 {
     protected $_modelName = 'model';
+
+    protected $_filesystemName = 'model.php';
 
     /**
      * Initialize
@@ -26,9 +28,8 @@ class Rei_ModelFileContext extends Zend_Tool_Project_Context_Filesystem_File
      */
     public function init()
     {
-        $this->_modelName      = $this->_resource->getAttribute('modelName');
-        $this->_filesystemName = ucfirst($this->_modelName) . '.php';
         parent::init();
+        $this->_initTableNames();
         return $this;
     }
 
@@ -57,6 +58,47 @@ class Rei_ModelFileContext extends Zend_Tool_Project_Context_Filesystem_File
     }
 
     /**
+     * Parsing and setting file and model name
+     *
+     * @return null
+     */
+    protected function _initTableNames()
+    {
+        $filter    = new Zend_Filter_Word_DashToUnderscore();
+        $modelName = $filter->filter($this->_resource->getAttribute('modelName'));
+
+        $wordArray = explode('_', $modelName);
+
+        for ($i=0; $i<count($wordArray); $i++) {
+            $wordArray[$i] = ucwords($wordArray[$i]);
+        }
+
+        $this->_modelName = implode('_', $wordArray);
+
+        if (count($wordArray) > 1) {
+            $pathInfo = pathinfo($this->getPath());
+            $dirname  = $pathInfo['dirname'];
+            $basename = $pathInfo['basename'];
+
+            for ($i=0; $i<(count($wordArray)-1); $i++) {
+                $dirname .= '/' . $wordArray[$i];
+
+                if (!file_exists($dirname)) {
+                    mkdir($dirname);
+                }
+            }
+
+            $this->setBaseDirectory($dirname);
+
+            $fileName = $wordArray[count($wordArray)-1];
+        } else {
+            $fileName = $this->_modelName;
+        }
+
+        $this->setFilesystemName($fileName . '.php');
+    }
+
+    /**
      * getContents() will be called at creation time. This could be
      * as simple as you see below or could use Zend_Tool_CodeGenerator
      * for this task.
@@ -65,8 +107,7 @@ class Rei_ModelFileContext extends Zend_Tool_Project_Context_Filesystem_File
      */
     public function getContents()
     {
-        $filter    = new Zend_Filter_Word_DashToCamelCase();
-        $className = 'Model_DbTable_' . $filter->filter($this->_modelName);
+        $className = 'Model_DbTable_' . $this->_modelName;
 
         $codeGenFile = new Zend_CodeGenerator_Php_File(array(
             'fileName' => $this->getPath(),

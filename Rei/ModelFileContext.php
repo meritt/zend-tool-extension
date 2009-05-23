@@ -66,7 +66,7 @@ class Rei_ModelFileContext extends Zend_Tool_Project_Context_Filesystem_File
     public function getContents()
     {
         $filter    = new Zend_Filter_Word_DashToCamelCase();
-        $className = $filter->filter($this->_modelName);
+        $className = 'Model_DbTable_' . $filter->filter($this->_modelName);
 
         $codeGenFile = new Zend_CodeGenerator_Php_File(array(
             'fileName' => $this->getPath(),

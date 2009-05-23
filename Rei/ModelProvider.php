@@ -40,9 +40,10 @@ class Rei_ModelProvider extends Zend_Tool_Project_Provider_Abstract
 
         // check to see if a model already exists
         $existingModelFile = $profile->search(array(
-            'modelsDirectory', 
-            'modelFile' => array('modelName' => $modelName))
-        );
+            'ModelsDirectory',
+            'DbTableDirectory', 
+            'modelFile' => array('modelName' => $modelName)
+        ));
 
         if ($existingModelFile !== false) {
             require_once 'Zend/Tool/Project/Provider/Exception.php';
@@ -51,8 +52,13 @@ class Rei_ModelProvider extends Zend_Tool_Project_Provider_Abstract
             );
         }
 
-        $newModel = $profile->createResourceAt(
-            'modelsDirectory',                  // where to create at
+        $modelsDirectoryResource = $profile->search('ModelsDirectory');
+
+        if (($dbTableDirectory = $modelsDirectoryResource->search('DbTableDirectory')) === false) {
+            $dbTableDirectory = $modelsDirectoryResource->createResource('DbTableDirectory');
+        }
+
+        $newModel = $dbTableDirectory->createResource(
             'ModelFile',                        // what to create
             array('modelName' => $modelName)    // attrs to initiate with
         );
